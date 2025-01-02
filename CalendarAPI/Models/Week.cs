@@ -1,10 +1,13 @@
-public class Week
+namespace CalendarAPI.Models
 {
-    public string Id { get; set; }
-    public string Code { get; set; }
-    public string Title { get; set; }
-    public string Description { get; set; }
-    public string Color { get; set; }
-    public List<int> Days { get; set; }
-    public string MonthId { get; set; }
+    public class Week
+    {
+        public string? Id { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Color { get; set; } = string.Empty;
+        public List<int> Days { get; set; } = new List<int>();
+        public string MonthId { get; set; } = string.Empty;
+    }
 } 
