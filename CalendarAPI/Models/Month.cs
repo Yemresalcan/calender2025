@@ -7,9 +7,24 @@ namespace CalendarAPI.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string? Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public List<Week> Weeks { get; set; } = new List<Week>();
-        public string UserId { get; set; } = string.Empty;
+        public string Id { get; set; }
+
+        [BsonElement("userId")]
+        public string UserId { get; set; }
+
+        [BsonElement("name")]
+        public string Name { get; set; }
+
+        [BsonElement("order")]
+        public int Order { get; set; }
+
+        [BsonElement("days")]
+        public int Days { get; set; } = 30;
+
+        [BsonElement("createdAt")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [BsonElement("updatedAt")]
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 } 

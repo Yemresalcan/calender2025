@@ -8,14 +8,45 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
+// MongoDB Configuration
+var mongoDbSettings = builder.Configuration.GetSection("MongoDbSettings").Get<MongoDbSettings>();
+var client = new MongoClient(mongoDbSettings.ConnectionString);
+var database = client.GetDatabase(mongoDbSettings.DatabaseName);
+
+// Register MongoDB
+builder.Services.AddSingleton<IMongoDatabase>(database);
+builder.Services.AddScoped<IEmailService, EmailService>();
+
+// Logging
+builder.Services.AddLogging(logging =>
+{
+    logging.ClearProviders();
+    logging.AddConsole();
+    logging.AddDebug();
+});
+
+// JWT Authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"])),
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+// Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Calendar API", Version = "v1" });
     
-    // JWT desteği
+    // JWT authentication için Swagger yapılandırması
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
@@ -44,80 +75,29 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// MongoDB Configuration
-builder.Services.Configure<MongoDbSettings>(
-    builder.Configuration.GetSection("MongoDbSettings"));
-
-builder.Services.AddSingleton<IMongoClient>(sp => 
-    new MongoClient(builder.Configuration["MongoDbSettings:ConnectionString"]));
-
-builder.Services.AddScoped<IMonthService, MonthService>();
-
 // CORS Policy
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReactApp",
+    options.AddPolicy("AllowAll",
         builder =>
         {
-            builder.WithOrigins("http://localhost:5173", "http://localhost:3000")
+            builder.AllowAnyOrigin()
                    .AllowAnyMethod()
-                   .AllowAnyHeader()
-                   .AllowCredentials();
+                   .AllowAnyHeader();
         });
 });
 
-// JWT Authentication
-var jwtSecret = builder.Configuration["JwtSettings:Secret"];
-if (string.IsNullOrEmpty(jwtSecret))
-{
-    throw new InvalidOperationException("JWT Secret is not configured");
-}
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(jwtSecret)),
-        ValidateIssuer = false,
-        ValidateAudience = false,
-        ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero
-    };
-
-    options.Events = new JwtBearerEvents
-    {
-        OnAuthenticationFailed = context =>
-        {
-            if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
-            {
-                context.Response.Headers.Add("Token-Expired", "true");
-            }
-            return Task.CompletedTask;
-        }
-    };
-});
-
-// Auth service'i ekle
-builder.Services.AddScoped<IAuthService, AuthService>();
-
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
+// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+app.UseCors("AllowAll");
 app.UseHttpsRedirection();
-app.UseCors("AllowReactApp");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
