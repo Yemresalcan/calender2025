@@ -4,6 +4,7 @@ using CalendarAPI.Models;
 using CalendarAPI.Services;
 using MongoDB.Driver;
 using System.Security.Claims;
+using Microsoft.Extensions.Logging;
 
 namespace CalendarAPI.Controllers
 {
@@ -12,126 +13,158 @@ namespace CalendarAPI.Controllers
     [Route("api/[controller]")]
     public class MonthsController : ControllerBase
     {
-        private readonly IMonthService _monthService;
+        private readonly IMongoCollection<Month> _months;
+        private readonly ILogger<MonthsController> _logger;
 
-        public MonthsController(IMonthService monthService)
+        public MonthsController(IMongoDatabase database, ILogger<MonthsController> logger)
         {
-            _monthService = monthService;
-        }
-
-        private string GetUserId()
-        {
-            if (!User.Identity.IsAuthenticated)
-            {
-                throw new UnauthorizedAccessException("User is not authenticated");
-            }
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                throw new UnauthorizedAccessException("User ID not found in token");
-            }
-
-            return userId;
+            _months = database.GetCollection<Month>("Months");
+            _logger = logger;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<Month>>> GetAll()
+        public async Task<ActionResult<IEnumerable<Month>>> GetMonths()
         {
-            try
-            {
-                var userId = GetUserId();
-                return await _monthService.GetAllAsync(userId);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
-        }
-
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Month>> Get(string id)
-        {
-            try
-            {
-                var userId = GetUserId();
-                var month = await _monthService.GetByIdAsync(id);
-                
-                if (month == null)
-                    return NotFound();
-                    
-                if (month.UserId != userId)
-                    return Unauthorized("You don't have permission to access this month");
-                    
-                return month;
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var months = await _months.Find(m => m.UserId == userId)
+                                    .SortBy(m => m.Order)
+                                    .ToListAsync();
+            return Ok(months);
         }
 
         [HttpPost]
-        public async Task<ActionResult<Month>> Create(Month month)
+        public async Task<ActionResult<Month>> CreateMonth(Month month)
         {
-            try
-            {
-                var userId = GetUserId();
-                month.UserId = userId;
-                await _monthService.CreateAsync(month);
-                return CreatedAtAction(nameof(Get), new { id = month.Id }, month);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            month.UserId = userId;
+            
+            // Sıralama için son ayın order'ını bul
+            var lastMonth = await _months.Find(m => m.UserId == userId)
+                                       .SortByDescending(m => m.Order)
+                                       .FirstOrDefaultAsync();
+            month.Order = (lastMonth?.Order ?? 0) + 1;
+            
+            await _months.InsertOneAsync(month);
+            return CreatedAtAction(nameof(GetMonths), new { id = month.Id }, month);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, Month month)
+        public async Task<IActionResult> UpdateMonth(string id, Month monthUpdate)
         {
-            try
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var month = await _months.Find(m => m.Id == id && m.UserId == userId)
+                                    .FirstOrDefaultAsync();
+
+            if (month == null)
             {
-                var userId = GetUserId();
-                var existingMonth = await _monthService.GetByIdAsync(id);
-                
-                if (existingMonth == null)
-                    return NotFound();
-                    
-                if (existingMonth.UserId != userId)
-                    return Unauthorized("You don't have permission to update this month");
-                    
-                month.UserId = userId; // Ensure userId is preserved
-                await _monthService.UpdateAsync(id, month);
-                return NoContent();
+                return NotFound();
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
+
+            monthUpdate.UserId = userId;
+            monthUpdate.UpdatedAt = DateTime.UtcNow;
+            
+            await _months.ReplaceOneAsync(m => m.Id == id && m.UserId == userId, monthUpdate);
+            return NoContent();
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> DeleteMonth(string id)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var result = await _months.DeleteOneAsync(m => m.Id == id && m.UserId == userId);
+
+            if (result.DeletedCount == 0)
+            {
+                return NotFound();
+            }
+
+            return NoContent();
+        }
+
+        [HttpPost("reorder")]
+        public async Task<IActionResult> ReorderMonths([FromBody] List<MonthOrderUpdate> updates)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            foreach (var update in updates)
+            {
+                await _months.UpdateOneAsync(
+                    m => m.Id == update.Id && m.UserId == userId,
+                    Builders<Month>.Update.Set(m => m.Order, update.NewOrder)
+                );
+            }
+
+            return Ok();
+        }
+
+        [HttpPost("initialize")]
+        public async Task<ActionResult<IEnumerable<Month>>> InitializeMonths()
         {
             try
             {
-                var userId = GetUserId();
-                var month = await _monthService.GetByIdAsync(id);
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                _logger.LogInformation($"Initializing months for user: {userId}");
+
+                // Kullanıcının mevcut ayları var mı kontrol et
+                var existingMonths = await _months.Find(m => m.UserId == userId).AnyAsync();
+                if (existingMonths)
+                {
+                    _logger.LogInformation("Months already exist for user");
+                    return Ok(await _months.Find(m => m.UserId == userId).ToListAsync());
+                }
+
+                // 13 ay oluştur
+                var defaultMonths = new List<Month>();
+                for (int i = 1; i <= 13; i++)
+                {
+                    defaultMonths.Add(new Month
+                    {
+                        UserId = userId,
+                        Name = GetMonthName(i),
+                        Days = 28,
+                        Order = i,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
+
+                _logger.LogInformation($"Creating {defaultMonths.Count} months for user");
+                await _months.InsertManyAsync(defaultMonths);
                 
-                if (month == null)
-                    return NotFound();
-                    
-                if (month.UserId != userId)
-                    return Unauthorized("You don't have permission to delete this month");
-                    
-                await _monthService.DeleteAsync(id);
-                return NoContent();
+                return Ok(defaultMonths);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (Exception ex)
             {
-                return Unauthorized(ex.Message);
+                _logger.LogError($"Error initializing months: {ex.Message}");
+                return StatusCode(500, new { message = "Aylar oluşturulurken bir hata oluştu" });
             }
         }
+
+        private string GetMonthName(int order)
+        {
+            return order switch
+            {
+                1 => "Ocak",
+                2 => "Şubat",
+                3 => "Mart",
+                4 => "Nisan",
+                5 => "Mayıs",
+                6 => "Haziran",
+                7 => "Temmuz",
+                8 => "Ağustos",
+                9 => "Eylül",
+                10 => "Ekim",
+                11 => "Kasım",
+                12 => "Aralık",
+                13 => "On Üçüncü Ay",
+                _ => $"Ay {order}"
+            };
+        }
+    }
+
+    public class MonthOrderUpdate
+    {
+        public string Id { get; set; }
+        public int NewOrder { get; set; }
     }
 } 

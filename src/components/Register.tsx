@@ -1,34 +1,49 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { authApi } from '../api/authApi';
-import { FiMail, FiLock, FiLogIn } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiUserPlus } from 'react-icons/fi';
 
-interface LoginProps {
-  onLoginSuccess: () => void;
-}
-
-export function Login({ onLoginSuccess }: LoginProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export function Register() {
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Şifreler eşleşmiyor');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const response = await authApi.login({ email, password });
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('username', response.username);
-      localStorage.setItem('tokenExpiry', (Date.now() + 24 * 60 * 60 * 1000).toString());
-      onLoginSuccess();
-      navigate('/');
+      await authApi.register({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password
+      });
+      navigate('/login');
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Giriş yapılırken bir hata oluştu');
+        setError('Kayıt olurken bir hata oluştu');
       }
     } finally {
       setIsLoading(false);
@@ -39,8 +54,8 @@ export function Login({ onLoginSuccess }: LoginProps) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
       <div className="w-full max-w-md p-8 space-y-6 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold text-gray-900">Hoş Geldiniz</h2>
-          <p className="text-gray-500">Devam etmek için giriş yapın</p>
+          <h2 className="text-3xl font-bold text-gray-900">Kayıt Ol</h2>
+          <p className="text-gray-500">Yeni bir hesap oluşturun</p>
         </div>
 
         {error && (
@@ -52,13 +67,30 @@ export function Login({ onLoginSuccess }: LoginProps) {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+              <FiUser className="text-gray-400" />
+              Kullanıcı Adı
+            </label>
+            <input
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+              placeholder="kullaniciadi"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
               <FiMail className="text-gray-400" />
               Email
             </label>
             <input
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
               placeholder="ornek@email.com"
               required
@@ -72,25 +104,41 @@ export function Login({ onLoginSuccess }: LoginProps) {
             </label>
             <input
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
               placeholder="••••••••"
               required
             />
           </div>
 
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" className="rounded text-purple-500 focus:ring-purple-500" />
-              <span className="text-gray-600">Beni hatırla</span>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+              <FiLock className="text-gray-400" />
+              Şifre Tekrar
             </label>
-            <Link 
-              to="/forgot-password"
-              className="text-purple-600 hover:text-purple-500 font-medium"
-            >
-              Şifremi unuttum
-            </Link>
+            <input
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="terms"
+              className="rounded text-purple-500 focus:ring-purple-500"
+              required
+            />
+            <label htmlFor="terms" className="text-sm text-gray-600">
+              <span>Kullanım şartlarını ve gizlilik politikasını kabul ediyorum</span>
+            </label>
           </div>
 
           <button
@@ -109,21 +157,21 @@ export function Login({ onLoginSuccess }: LoginProps) {
               </svg>
             ) : (
               <>
-                <FiLogIn className="text-xl" />
-                Giriş Yap
+                <FiUserPlus className="text-xl" />
+                Kayıt Ol
               </>
             )}
           </button>
         </form>
 
         <div className="text-center text-sm text-gray-500">
-          Hesabınız yok mu?{' '}
-          <Link 
-            to="/register"
-            className="text-purple-600 hover:text-purple-500 font-medium"
+          Zaten hesabınız var mı?{' '}
+          <a
+            onClick={() => navigate('/login')}
+            className="text-purple-600 hover:text-purple-500 font-medium cursor-pointer"
           >
-            Kayıt olun
-          </Link>
+            Giriş yapın
+          </a>
         </div>
       </div>
     </div>

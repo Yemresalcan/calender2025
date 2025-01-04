@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "RUM/NSnuht4=",
+  "dgSpecHash": "99zMJyj700M=",
   "success": true,
-  "projectFilePath": "C:\\Users\\yunus\\Downloads\\calender2025\\calender2025\\CalendarAPI\\CalendarAPI.csproj",
+  "projectFilePath": "F:\\2025Projects\\calender2025\\CalendarAPI\\CalendarAPI.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\yunus\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
     "C:\\Users\\yunus\\.nuget\\packages\\dnsclient\\1.6.1\\dnsclient.1.6.1.nupkg.sha512",
