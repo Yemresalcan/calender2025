@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\yunus\\Downloads\\calender2025\\calender2025\\CalendarAPI\\CalendarAPI.csproj": {}
+    "F:\\2025Projects\\calender2025\\CalendarAPI\\CalendarAPI.csproj": {}
   },
   "projects": {
-    "C:\\Users\\yunus\\Downloads\\calender2025\\calender2025\\CalendarAPI\\CalendarAPI.csproj": {
+    "F:\\2025Projects\\calender2025\\CalendarAPI\\CalendarAPI.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\yunus\\Downloads\\calender2025\\calender2025\\CalendarAPI\\CalendarAPI.csproj",
+        "projectUniqueName": "F:\\2025Projects\\calender2025\\CalendarAPI\\CalendarAPI.csproj",
         "projectName": "CalendarAPI",
-        "projectPath": "C:\\Users\\yunus\\Downloads\\calender2025\\calender2025\\CalendarAPI\\CalendarAPI.csproj",
+        "projectPath": "F:\\2025Projects\\calender2025\\CalendarAPI\\CalendarAPI.csproj",
         "packagesPath": "C:\\Users\\yunus\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\yunus\\Downloads\\calender2025\\calender2025\\CalendarAPI\\obj\\",
+        "outputPath": "F:\\2025Projects\\calender2025\\CalendarAPI\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

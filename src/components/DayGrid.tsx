@@ -1,11 +1,11 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Week } from '../types/calendar';
+import { Week, Month } from '../types/calendar';
 
 interface DayGridProps {
   month: string;
   selectedDays: Set<string>;
-  onDayClick: (day: string) => void;
+  onDayClick: (dateKey: string) => void;
   weeks: Week[];
 }
 
@@ -37,15 +37,18 @@ const Day = styled.div<{ isSelected: boolean; isInWeek: boolean; weekColor?: str
   }
 `;
 
-const DayGrid: React.FC<DayGridProps> = ({
-  month,
-  selectedDays,
-  onDayClick,
-  weeks
-}) => {
+export function DayGrid({ month, selectedDays, onDayClick, weeks }: DayGridProps) {
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
+  const selectedDaysArray = React.useMemo(() => {
+    try {
+      return Array.from(selectedDays || new Set<string>());
+    } catch (error) {
+      console.error('Selected days dönüşüm hatası:', error);
+      return [];
+    }
+  }, [selectedDays]);
 
-  const getWeekForDay = (day: number) => {
+  const getWeekForDay = (day: number): Week | undefined => {
     return weeks.find(week => week.days.includes(day));
   };
 
@@ -58,7 +61,7 @@ const DayGrid: React.FC<DayGridProps> = ({
         return (
           <Day
             key={day}
-            isSelected={selectedDays.has(dateKey)}
+            isSelected={Boolean(selectedDaysArray?.includes(dateKey))}
             isInWeek={!!week}
             weekColor={week?.color}
             onClick={() => onDayClick(dateKey)}
@@ -69,6 +72,6 @@ const DayGrid: React.FC<DayGridProps> = ({
       })}
     </Grid>
   );
-};
+}
 
 export default DayGrid;
