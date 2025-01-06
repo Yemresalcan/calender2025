@@ -15,16 +15,19 @@ namespace CalendarAPI.Models
         [BsonElement("name")]
         public string Name { get; set; }
 
+        [BsonElement("days")]
+        public int Days { get; set; }
+
+        [BsonElement("startDay")]
+        public int StartDay { get; set; }  // 0: Pazar, 1: Pazartesi, ..., 6: Cumartesi
+
         [BsonElement("order")]
         public int Order { get; set; }
 
-        [BsonElement("days")]
-        public int Days { get; set; } = 30;
-
         [BsonElement("createdAt")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; }
 
         [BsonElement("updatedAt")]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; }
     }
 } 

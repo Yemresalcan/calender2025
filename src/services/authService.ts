@@ -59,7 +59,8 @@ export const authService = {
   },
 
   getTokenExpiry(): number {
-    return Date.now() + 24 * 60 * 60 * 1000; // 24 saat
+    const rememberMe = localStorage.getItem('rememberMe') === 'true';
+    return Date.now() + (rememberMe ? 30 : 1) * 24 * 60 * 60 * 1000; // 30 gün veya 24 saat
   },
 
   getToken(): string | null {
@@ -76,6 +77,8 @@ export const authService = {
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('tokenExpiry');
+    localStorage.removeItem('rememberMe');
+    localStorage.removeItem('username');
     delete axios.defaults.headers.common['Authorization'];
   }
 }; 

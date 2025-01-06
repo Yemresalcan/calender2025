@@ -10,6 +10,7 @@ interface LoginProps {
 export function Login({ onLoginSuccess }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -21,7 +22,11 @@ export function Login({ onLoginSuccess }: LoginProps) {
       const response = await authApi.login({ email, password });
       localStorage.setItem('token', response.token);
       localStorage.setItem('username', response.username);
-      localStorage.setItem('tokenExpiry', (Date.now() + 24 * 60 * 60 * 1000).toString());
+      const expiryTime = rememberMe 
+        ? Date.now() + 30 * 24 * 60 * 60 * 1000  // 30 gün
+        : Date.now() + 24 * 60 * 60 * 1000;      // 24 saat
+      localStorage.setItem('tokenExpiry', expiryTime.toString());
+      localStorage.setItem('rememberMe', rememberMe.toString());
       onLoginSuccess();
       navigate('/');
     } catch (err) {
@@ -82,7 +87,12 @@ export function Login({ onLoginSuccess }: LoginProps) {
 
           <div className="flex items-center justify-between text-sm">
             <label className="flex items-center gap-2">
-              <input type="checkbox" className="rounded text-purple-500 focus:ring-purple-500" />
+              <input 
+                type="checkbox" 
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="rounded text-purple-500 focus:ring-purple-500" 
+              />
               <span className="text-gray-600">Beni hatırla</span>
             </label>
             <Link 

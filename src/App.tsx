@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar } from 'lucide-react';
 import { MonthCard } from './components/MonthCard';
 import { authService } from './services/authService';
 import { calendarService } from './services/calendarService';
@@ -11,8 +10,8 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Register } from './components/Register';
 import { ForgotPassword } from './components/ForgotPassword';
 import { ResetPassword } from './components/ResetPassword';
+import { TaskManager } from './components/TaskManager';
 
-import axios from 'axios';
 
 const JWT_SECRET = import.meta.env.VITE_JWT_SECRET || 'my-super-complex-secret-key-2024-!@#$%^&*';
 const TOKEN_EXPIRY = '24h';
@@ -85,11 +84,10 @@ interface MonthModalProps {
 
 function App() {
   const [months, setMonths] = useState<Month[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState(0);
-  const [selectedDays, setSelectedDays] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isTaskManagerOpen, setIsTaskManagerOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMonth, setEditingMonth] = useState<Month | null>(null);
   const navigate = useNavigate();
@@ -245,18 +243,48 @@ function App() {
         element={
           <AppContainer>
             <CalendarContainer>
-              <CalendarTitle>
-                13 Aylık Takvim
-              </CalendarTitle>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {months.map((month, index) => (
+              <div className="flex justify-between items-center mb-6">
+                <CalendarTitle>
+                  13 Aylık Takvim
+                </CalendarTitle>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setIsTaskManagerOpen(true)}
+                    className="px-4 py-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Görev Ekle
+                  </button>
+                  <button
+                    onClick={() => {
+                      authService.logout();
+                      setIsAuthenticated(false);
+                      navigate('/login');
+                    }}
+                    className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Çıkış Yap
+                  </button>
+                </div>
+              </div>
+
+              <TaskManager 
+                isOpen={isTaskManagerOpen}
+                onClose={() => setIsTaskManagerOpen(false)}
+                onOpen={() => setIsTaskManagerOpen(true)}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+                {months.map((month) => (
                   <MonthCard
                     key={month.id}
                     month={month}
-                    isSelected={selectedMonth === index}
-                    selectedDays={selectedDays || new Set()}
-                    onDayClick={handleDayClick}
-                    onClick={() => setSelectedMonth(index)}
+                    onUpdate={loadMonths}
                   />
                 ))}
               </div>
