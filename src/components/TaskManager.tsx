@@ -10,6 +10,7 @@ interface TaskManagerProps {
 interface Month {
   id: string;
   name: string;
+  order: number;
 }
 
 interface WeeklyTask {
@@ -92,15 +93,13 @@ export function TaskManager({ isOpen, onClose, onOpen }: TaskManagerProps) {
     }
   };
 
-  const getWeeks = (monthId: string) => {
-    const month = months.find(m => m.id === monthId);
-    if (!month) return [];
-
+  const getWeekDates = (monthName: string, monthOrder: number) => {
+    const startWeek = (monthOrder - 1) * 4 + 1;
     return [
-      { value: '1', label: '25-01 (1-7)' },
-      { value: '2', label: '8-14' },
-      { value: '3', label: '15-21' },
-      { value: '4', label: '22-28' }
+      { value: startWeek.toString(), label: `25-${startWeek.toString().padStart(2, '0')} ${monthName}` },
+      { value: (startWeek + 1).toString(), label: `25-${(startWeek + 1).toString().padStart(2, '0')} ${monthName}` },
+      { value: (startWeek + 2).toString(), label: `25-${(startWeek + 2).toString().padStart(2, '0')} ${monthName}` },
+      { value: (startWeek + 3).toString(), label: `25-${(startWeek + 3).toString().padStart(2, '0')} ${monthName}` }
     ];
   };
 
@@ -110,15 +109,14 @@ export function TaskManager({ isOpen, onClose, onOpen }: TaskManagerProps) {
     setIsLoading(true);
     try {
       const weekNumber = parseInt(selectedWeek);
-      const startDay = (weekNumber - 1) * 7 + 1;
-      const days = Array.from({ length: 7 }, (_, i) => startDay + i);
+      const currentMonth = Math.ceil(weekNumber / 4); // Hangi ayda olduğumuzu hesapla
 
       await calendarService.addWeeklyTask({
         monthId: selectedMonth,
         weekNumber,
-        startDate: `2025-01-${startDay.toString().padStart(2, '0')}`,
-        endDate: `2025-01-${(startDay + 6).toString().padStart(2, '0')}`,
-        days,
+        startDate: `2025-${currentMonth.toString().padStart(2, '0')}-25`,
+        endDate: `2025-${currentMonth.toString().padStart(2, '0')}-28`,
+        days: [25, 26, 27, 28], // Her hafta için sabit günler
         color: selectedColor,
         taskText: taskText.trim()
       });
@@ -227,7 +225,10 @@ export function TaskManager({ isOpen, onClose, onOpen }: TaskManagerProps) {
                   className="w-full p-2 border rounded-md"
                 >
                   <option value="">Hafta seçin...</option>
-                  {getWeeks(selectedMonth).map((week) => (
+                  {getWeekDates(
+                    months.find(m => m.id === selectedMonth)?.name || '',
+                    months.find(m => m.id === selectedMonth)?.order || 1
+                  ).map((week) => (
                     <option key={week.value} value={week.value}>
                       {week.label}
                     </option>

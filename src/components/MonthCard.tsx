@@ -137,23 +137,35 @@ export function MonthCard({ month, onUpdate }: MonthCardProps) {
     const monthDays = Array.from({ length: 28 }, (_, i) => i + 1);
     const allDays = [...emptyDays, ...monthDays];
 
-    return allDays.map((day, index) => {
-      if (day === null) {
-        return <Day key={`empty-${index}`} className="bg-gray-50" />;
-      }
+    return (
+      <>
+        <WeekDays>
+          {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map(day => (
+            <WeekDay key={day}>{day}</WeekDay>
+          ))}
+        </WeekDays>
 
-      const task = tasks.find(t => t.days.includes(day));
-      return (
-        <Day 
-          key={day}
-          backgroundColor={task?.color}
-          onClick={() => handleDayClick(day)}
-          title={task ? task.taskText : undefined}
-        >
-          {day}
-        </Day>
-      );
-    });
+        <DayGrid>
+          {allDays.map((day, index) => {
+            if (day === null) {
+              return <Day key={`empty-${index}`} className="bg-gray-50" />;
+            }
+
+            const task = tasks.find(t => t.days.includes(day));
+            return (
+              <Day 
+                key={day}
+                backgroundColor={task?.color}
+                onClick={() => handleDayClick(day)}
+                title={task ? task.taskText : undefined}
+              >
+                {day}
+              </Day>
+            );
+          })}
+        </DayGrid>
+      </>
+    );
   };
 
   return (
@@ -198,15 +210,7 @@ export function MonthCard({ month, onUpdate }: MonthCardProps) {
         )}
       </div>
 
-      <WeekDays>
-        {weekDays.map(day => (
-          <WeekDay key={day}>{day}</WeekDay>
-        ))}
-      </WeekDays>
-
-      <DayGrid>
-        {renderCalendarDays()}
-      </DayGrid>
+      {renderCalendarDays()}
 
       {isTaskPopupOpen && selectedTask && (
         <TaskPopup

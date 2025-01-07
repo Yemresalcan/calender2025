@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { calendarService } from '../services/calendarService';
 
 interface WeeklyTasksProps {
@@ -25,28 +25,53 @@ export function WeeklyTasks({ monthId, onUpdate }: WeeklyTasksProps) {
   const [selectedWeek, setSelectedWeek] = useState<string>('');
   const [taskText, setTaskText] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
+  const [monthOrder, setMonthOrder] = useState(0);
 
-  const weeks = [
-    { value: '1', label: '25-01 Ocak (1-7)' },
-    { value: '2', label: '8-14 Ocak' },
-    { value: '3', label: '15-21 Ocak' },
-    { value: '4', label: '22-28 Ocak' }
-  ];
+  const getWeekDates = (monthName: string, monthOrder: number) => {
+    // Her ay için 4 hafta, başlangıç haftası ayın sırasına göre belirlenir
+    const startWeek = (monthOrder - 1) * 4 + 1;
+    return [
+      { value: startWeek.toString(), label: `25-${startWeek.toString().padStart(2, '0')} ${monthName}` },
+      { value: (startWeek + 1).toString(), label: `25-${(startWeek + 1).toString().padStart(2, '0')} ${monthName}` },
+      { value: (startWeek + 2).toString(), label: `25-${(startWeek + 2).toString().padStart(2, '0')} ${monthName}` },
+      { value: (startWeek + 3).toString(), label: `25-${(startWeek + 3).toString().padStart(2, '0')} ${monthName}` }
+    ];
+  };
+
+  const [currentMonth, setCurrentMonth] = useState('');
+
+  useEffect(() => {
+    // Seçili ayın adını al
+    const fetchMonthName = async () => {
+      try {
+        const months = await calendarService.getAllMonths();
+        const month = months.find(m => m.id === monthId);
+        if (month) {
+          setCurrentMonth(month.name);
+          setMonthOrder(month.order);
+        }
+      } catch (error) {
+        console.error('Ay bilgisi alınırken hata:', error);
+      }
+    };
+    
+    fetchMonthName();
+  }, [monthId]);
 
   const handleAddTask = async () => {
     if (!selectedWeek || !taskText.trim()) return;
 
     try {
       const weekNumber = parseInt(selectedWeek);
-      const startDay = (weekNumber - 1) * 7 + 1;
-      const days = Array.from({ length: 7 }, (_, i) => startDay + i);
+      const startDay = 25; // Her hafta 25'inde başlıyor
+      const currentMonth = Math.ceil(weekNumber / 4); // Hangi ayda olduğumuzu hesapla
 
       await calendarService.addWeeklyTask({
         monthId,
         weekNumber,
-        startDate: `2025-01-${startDay.toString().padStart(2, '0')}`,
-        endDate: `2025-01-${(startDay + 6).toString().padStart(2, '0')}`,
-        days,
+        startDate: `2025-${currentMonth.toString().padStart(2, '0')}-25`,
+        endDate: `2025-${currentMonth.toString().padStart(2, '0')}-28`,
+        days: [25, 26, 27, 28], // Her hafta için sabit günler
         color: selectedColor,
         taskText: taskText.trim()
       });
@@ -84,7 +109,7 @@ export function WeeklyTasks({ monthId, onUpdate }: WeeklyTasksProps) {
               className="w-full p-2 border rounded-md"
             >
               <option value="">Hafta seçin...</option>
-              {weeks.map((week) => (
+              {getWeekDates(currentMonth, monthOrder).map((week) => (
                 <option key={week.value} value={week.value}>
                   {week.label}
                 </option>

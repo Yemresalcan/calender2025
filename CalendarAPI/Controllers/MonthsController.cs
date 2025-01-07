@@ -107,30 +107,28 @@ namespace CalendarAPI.Controllers
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 _logger.LogInformation($"Initializing months for user: {userId}");
 
-                // Kullanıcının mevcut ayları var mı kontrol et
                 var existingMonths = await _months.Find(m => m.UserId == userId).AnyAsync();
                 if (existingMonths)
                 {
-                    _logger.LogInformation("Months already exist for user");
                     return Ok(await _months.Find(m => m.UserId == userId).ToListAsync());
                 }
 
                 // 2025 yılı için her ayın ilk gününün haftanın hangi günü olduğunu hesapla
                 var monthStartDays = new Dictionary<int, int>
                 {
-                    { 1, 3 },   // Ocak 2025 Çarşamba günü başlıyor
-                    { 2, 6 },   // Şubat 2025 Cumartesi günü başlıyor
-                    { 3, 6 },   // Mart 2025 Cumartesi günü başlıyor
-                    { 4, 2 },   // Nisan 2025 Salı günü başlıyor
-                    { 5, 4 },   // Mayıs 2025 Perşembe günü başlıyor
-                    { 6, 0 },   // Haziran 2025 Pazar günü başlıyor
-                    { 7, 2 },   // Temmuz 2025 Salı günü başlıyor
-                    { 8, 5 },   // Ağustos 2025 Cuma günü başlıyor
-                    { 9, 1 },   // Eylül 2025 Pazartesi günü başlıyor
-                    { 10, 3 },  // Ekim 2025 Çarşamba günü başlıyor
-                    { 11, 6 },  // Kasım 2025 Cumartesi günü başlıyor
-                    { 12, 1 },  // Aralık 2025 Pazartesi günü başlıyor
-                    { 13, 3 }   // 13. ay (Varsayılan olarak Çarşamba)
+                    { 1, 2 },   // Ocak 2025 - 1 Ocak Çarşamba (2)
+                    { 2, 5 },   // Şubat 2025 - 1 Şubat Cumartesi (5)
+                    { 3, 5 },   // Mart 2025 - 1 Mart Cumartesi (5)
+                    { 4, 1 },   // Nisan 2025 - 1 Nisan Salı (1)
+                    { 5, 4 },   // Mayıs 2025 - 1 Mayıs Perşembe (4)
+                    { 6, 0 },   // Haziran 2025 - 1 Haziran Pazar (0)
+                    { 7, 2 },   // Temmuz 2025 - 1 Temmuz Salı (2)
+                    { 8, 5 },   // Ağustos 2025 - 1 Ağustos Cuma (5)
+                    { 9, 1 },   // Eylül 2025 - 1 Eylül Pazartesi (1)
+                    { 10, 3 },  // Ekim 2025 - 1 Ekim Çarşamba (3)
+                    { 11, 6 },  // Kasım 2025 - 1 Kasım Cumartesi (6)
+                    { 12, 1 },  // Aralık 2025 - 1 Aralık Pazartesi (1)
+                    { 13, 3 }   // 13. ay - Perşembe (3)
                 };
 
                 var defaultMonths = new List<Month>();
@@ -141,16 +139,14 @@ namespace CalendarAPI.Controllers
                         UserId = userId,
                         Name = GetMonthName(i),
                         Days = 28,
-                        StartDay = monthStartDays[i], // 0: Pazar, 1: Pazartesi, ..., 6: Cumartesi
+                        StartDay = monthStartDays[i], // 0: Pazartesi, 1: Salı, ..., 6: Pazar
                         Order = i,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
                     });
                 }
 
-                _logger.LogInformation($"Creating {defaultMonths.Count} months for user");
                 await _months.InsertManyAsync(defaultMonths);
-                
                 return Ok(defaultMonths);
             }
             catch (Exception ex)
