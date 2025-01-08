@@ -151,7 +151,12 @@ export function MonthCard({ month, onUpdate }: MonthCardProps) {
               return <Day key={`empty-${index}`} className="bg-gray-50" />;
             }
 
-            const task = tasks.find(t => t.days.includes(day));
+            const task = tasks.find(t => {
+              if (!day) return false;
+              
+              return t.days.includes(day);
+            });
+
             return (
               <Day 
                 key={day}

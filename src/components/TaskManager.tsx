@@ -109,14 +109,16 @@ export function TaskManager({ isOpen, onClose, onOpen }: TaskManagerProps) {
     setIsLoading(true);
     try {
       const weekNumber = parseInt(selectedWeek);
-      const currentMonth = Math.ceil(weekNumber / 4); // Hangi ayda olduğumuzu hesapla
+      const weekInMonth = ((weekNumber - 1) % 4) + 1; // 1-4 arası
+      const startDay = ((weekInMonth - 1) * 7) + 1; // Her haftanın başlangıç günü
+      const days = Array.from({ length: 7 }, (_, i) => startDay + i); // 7 günlük hafta
 
       await calendarService.addWeeklyTask({
         monthId: selectedMonth,
-        weekNumber,
-        startDate: `2025-${currentMonth.toString().padStart(2, '0')}-25`,
-        endDate: `2025-${currentMonth.toString().padStart(2, '0')}-28`,
-        days: [25, 26, 27, 28], // Her hafta için sabit günler
+        weekNumber: weekInMonth, // Ay içindeki hafta numarası
+        startDate: `2025-${months.find(m => m.id === selectedMonth)?.order.toString().padStart(2, '0')}-${startDay.toString().padStart(2, '0')}`,
+        endDate: `2025-${months.find(m => m.id === selectedMonth)?.order.toString().padStart(2, '0')}-${(startDay + 6).toString().padStart(2, '0')}`,
+        days: days,
         color: selectedColor,
         taskText: taskText.trim()
       });
