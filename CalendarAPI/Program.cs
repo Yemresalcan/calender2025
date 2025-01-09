@@ -8,6 +8,10 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Port ayarı
+var port = Environment.GetEnvironmentVariable("PORT") ?? "80";
+builder.WebHost.UseUrls($"http://+:{port}");
+
 // MongoDB Configuration
 var mongoDbSettings = builder.Configuration.GetSection("MongoDbSettings").Get<MongoDbSettings>();
 var client = new MongoClient(mongoDbSettings.ConnectionString);
@@ -86,10 +90,6 @@ builder.Services.AddCors(options =>
                    .AllowCredentials();
         });
 });
-
-var port = Environment.GetEnvironmentVariable("PORT") ?? "80";
-var url = $"http://+:{port}";
-builder.WebHost.UseUrls(url);
 
 var app = builder.Build();
 
