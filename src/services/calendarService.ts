@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Month } from '../types/calendar';
 
-const API_URL = 'http://localhost:5153/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5153/api';
 
 // Axios interceptor'ı ekleyin
 axios.interceptors.request.use((config) => {
