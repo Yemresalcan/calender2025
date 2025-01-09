@@ -11,6 +11,7 @@ import { Register } from './components/Register';
 import { ForgotPassword } from './components/ForgotPassword';
 import { ResetPassword } from './components/ResetPassword';
 import { TaskManager } from './components/TaskManager';
+import { NotFound } from './components/NotFound';
 
 
 const JWT_SECRET = import.meta.env.VITE_JWT_SECRET || 'my-super-complex-secret-key-2024-!@#$%^&*';
@@ -302,6 +303,7 @@ function App() {
           </AppContainer>
         }
       />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
