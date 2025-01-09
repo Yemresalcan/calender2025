@@ -87,6 +87,10 @@ builder.Services.AddCors(options =>
         });
 });
 
+var port = Environment.GetEnvironmentVariable("PORT") ?? "80";
+var url = $"http://+:{port}";
+builder.WebHost.UseUrls(url);
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
