@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5153/api/Auth';
+const API_URL = 'https://calender2025api-production.up.railway.app/api/Auth';
 
 interface LoginRequest {
   email: string;
